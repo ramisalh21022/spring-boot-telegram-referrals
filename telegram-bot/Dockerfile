@@ -1,18 +1,14 @@
-# استخدم JDK 21
-FROM eclipse-temurin:21-jdk-alpine
-
-# اضبط دليل العمل
+# مرحلة البناء: نستخدم Maven لتجميع المشروع
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
-
-# انسخ pom.xml وملفات المشروع
-COPY pom.xml ./
+COPY pom.xml .
 COPY src ./src
+RUN mvn clean package -DskipTests
 
-# بناء المشروع
-RUN ./mvnw clean package -DskipTests
-
-# تعيين المنفذ الذي سيستمع عليه Spring Boot
+# مرحلة التشغيل: ننسخ الـ JAR الناتج
+FROM eclipse-temurin:21-jdk-alpine
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
 
-# تشغيل التطبيق
-CMD ["java", "-jar", "target/telegram-bot-0.0.1-SNAPSHOT.jar"]
